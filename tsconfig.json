@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "target": "es6",
+        "removeComments": true,
+        "noImplicitAny": true,
+        "sourceMap": true,
+        "outDir": "build",
+        "experimentalDecorators": true,
+        "baseUrl": "./src",
+    },
+    "exclude": [
+        "*.spec.ts"
+    ]
+}

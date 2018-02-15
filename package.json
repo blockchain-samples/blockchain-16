@@ -1,0 +1,24 @@
+{
+  "name": "blockchain",
+  "version": "0.0.1",
+  "description": "simple implementation of blockchain in js",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start:build": "tsc && node ./build/index.js",
+    "start": "node ./build/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/killroy192/blockchain.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/killroy192/blockchain/issues"
+  },
+  "homepage": "https://github.com/killroy192/blockchain#readme",
+  "dependencies": {
+    "@types/node": "^9.4.6"
+  }
+}
