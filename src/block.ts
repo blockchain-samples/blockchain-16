@@ -39,7 +39,7 @@ export class Block implements BaseBlock {
     }
 
     private makeHash() {
-        const buffer = Buffer.from([this.blockIndex, this.prevBlockHash, this.timestamp, this.blockData]);
-        this.blockHash = crypto.createHash("sha256").update(buffer).digest();
+        const buffer = Buffer.from([this.blockIndex, this.prevBlockHash, this.timestamp]);
+        this.blockHash = crypto.createHmac("sha256", buffer).update(this.blockData).digest();
     }
 }

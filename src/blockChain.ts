@@ -25,25 +25,29 @@ class BlockChain {
     }
 
     public addBlock(block: Block) {
-        if (this.validateBlock(block)) {
+        if (this.validateBlock(block, this.lastBlock)) {
             this.blockChain.push(block);
             this.currentLastBlock = block;
         }
+    }
+
+    // public syncChain(): void {};
+
+    public validateBlock(newBlock: Block, previousBlock: Block): boolean {
+
+        const buffer = Buffer.from([previousBlock.index + 1, previousBlock.hash, newBlock.timestamp]);
+        const realHashOfNewBlock = crypto.createHmac("sha256", buffer).update(newBlock.data).digest();
+        
+        return !realHashOfNewBlock.compare(newBlock.hash);
     }
 
     get lastBlock() {
         return this.currentLastBlock;
     }
 
-    // public syncChain(): void {};
-
-    private validateBlock(block: Block): boolean {
-        return true;
-    }
-
     private createGenesis() {
         const genesisParent: BaseBlock = {
-            hash: crypto.createHash("sha256").digest(),
+            hash: null,
             index: -1,
         };
         const genesisBock = new Block("My genesis block", genesisParent);
