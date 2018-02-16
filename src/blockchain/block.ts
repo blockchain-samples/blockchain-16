@@ -1,12 +1,12 @@
 import crypto = require("crypto");
 
-export class Block implements BaseBlock {
+export class Block implements IBaseBlock {
     private blockIndex: number;
     private blockHash: Buffer;
     private prevBlockHash: Buffer;
     private blockTimestamp: number;
     private blockData: string;
-    constructor(data: string, prevBlock: Block | BaseBlock) {
+    constructor(data: string, prevBlock: Block | IBaseBlock) {
         this.blockIndex = prevBlock.index + 1;
         this.prevBlockHash = prevBlock.hash;
         this.blockData = data;

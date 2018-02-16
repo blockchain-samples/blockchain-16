@@ -1,8 +1,8 @@
-declare interface BaseBlock {
+declare interface IBaseBlock {
     index: number;
     hash: Buffer;
 }
 
-declare interface SimpleData {
+declare interface ISimpleData {
     [name: string]: any;
 }
