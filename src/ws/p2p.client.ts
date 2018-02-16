@@ -1,19 +1,9 @@
 import WebSocket = require("ws");
-import { SERVER_PORT } from "../constants";
 
-// const ws = new WebSocket("ws://localhost:8100");
+import { BC } from "../blockchain/blockChain";
+import { blockchainEvents, SERVER_PORT, wsClientCommands, wsServerData } from "../constants";
 
-// ws.onopen = () => {
-//     // tslint:disable-next-line:no-console
-//     ws.send("Hello");
-// };
-
-// ws.onmessage = (ev) => {
-//     // tslint:disable-next-line:no-console
-//     console.log("ws get message:" + ev.data);
-// };
-
-interface IPeerAddres {
+interface IPeerAddress {
     ip: number | string;
     port: number;
 }
@@ -21,13 +11,18 @@ interface IPeerAddres {
 // get new block and add it to blockchain
 
 class P2PClient {
-    private conectedPeers: WebSocket[];
+    public static syncBlockchain(blockChain: IBlockChain) {
+        BC.emit(blockchainEvents.SYNC_BLOCKCHAIN, blockChain);
+    }
+
+    private connectedPeers: WebSocket[];
+    private shouldSyncBlockchain: boolean = true;
 
     constructor() {
         this.connectToPeers([{ ip: "localhost", port: SERVER_PORT}]);
     }
 
-    public connectToPeers(newPeers: IPeerAddres[]) {
+    public connectToPeers(newPeers: IPeerAddress[]) {
         newPeers.forEach((peer) => {
             const { ip, port } = peer;
             const ws = new WebSocket(`ws://${ip}:${port}`);
@@ -40,10 +35,19 @@ class P2PClient {
 
     private initOpenHandler(ws: WebSocket): void {
         ws.on("open", () => {
+            if (this.shouldSyncBlockchain) {
+                ws.send({
+                    type: wsClientCommands.SYNC_BLOCKCHAIN,
+                });
+            } else {
+                ws.send({
+                    type: wsClientCommands.LAST_DATA,
+                });
+            }
             // tslint:disable-next-line:no-console
             console.log("connection enable");
         });
-        this.conectedPeers.push(ws);
+        this.connectedPeers.push(ws);
     }
 
     private initErrorHandler(ws: WebSocket): void {
@@ -54,10 +58,32 @@ class P2PClient {
     }
 
     private initMassageHandler(ws: WebSocket): void {
-        ws.onmessage = (ev) => {
+        ws.on("message", (receivedData) => {
+
+            const {type, content}: IReceivedData = JSON.parse(receivedData.toString());
+
+            switch (type) {
+                case wsServerData.ALL_BLOCKS:
+                    P2PClient.syncBlockchain(content as IBlockChain);
+                    this.shouldSyncBlockchain = true;
+                    break;
+                case wsServerData.NEW_BLOCK:
+                    BC.emit(blockchainEvents.ADD_BLOCK, content as IBlock);
+                case wsServerData.SHOULD_UPDATE:
+                    const { lastBlockHash, lengthOfBlockchain } = content;
+                    const needSync: boolean = (BC.lastBlock.hash.compare(Buffer.from(lastBlockHash))
+                    && BC.blockChain.length > lengthOfBlockchain);
+                    if (needSync) {
+                        ws.send({
+                            type: wsClientCommands.SYNC_BLOCKCHAIN,
+                        });
+                    }
+                default:
+                    break;
+            }
             // tslint:disable-next-line:no-console
-            console.log("ws get message:" + ev.data);
-        };
+            console.log("ws get data");
+        });
     }
 }
 

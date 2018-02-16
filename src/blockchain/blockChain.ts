@@ -1,22 +1,20 @@
 import crypto = require("crypto");
 import EventEmitter = require("events");
+import { blockchainEvents } from "../constants";
 import { Block } from "./block";
 
-class BlockChain extends EventEmitter  {
-    private blockChainDB: Block[] = [];
-    private currentLastBlock: Block;
-    // constructor() {
-    //     // 1. sinc to blockchain if it exist
-    //     // 1.1 get blockchain
-    //     // 1.2 validate all blocks
-    //     // find last unvalidated block
-    // }
+class BlockChain extends EventEmitter implements IBlockChain {
+    private blockChainDB: IBlock[] = [];
+    private currentLastBlock: IBlock;
 
     public createGenesis(randomHash: string): BlockChain {
         if (!this.lastBlock) {
-            const genesisParent: IBaseBlock = {
+            const genesisParent: IBlock = {
+                data: "",
                 hash: Buffer.from(randomHash, "hex"),
                 index: -1,
+                prevHash: new Buffer(0),
+                timestamp: 0,
             };
             const genesisBock = new Block("My genesis block", genesisParent);
             this.blockChainDB = [genesisBock];
@@ -34,7 +32,7 @@ class BlockChain extends EventEmitter  {
         }
     }
 
-    public addBlock(block: Block): BlockChain {
+    public addBlock(block: IBlock): BlockChain {
         if (block && this.validateBlock(block, this.lastBlock)) {
             this.blockChainDB.push(block);
             this.currentLastBlock = block;
@@ -42,11 +40,9 @@ class BlockChain extends EventEmitter  {
         return this;
     }
 
-    // public syncChain(): void {};
-
     public replaceChain = ({ blockChain, lastBlock}: BlockChain) => {
 
-        if (this.validateBlockChain(blockChain) && blockChain.length > this.blockChainDB.length) {
+        if (blockChain.length > this.blockChainDB.length && this.validateBlockChain(blockChain)) {
             // tslint:disable-next-line:no-console
             console.log("Received blockchain is valid. Replacing current blockchain with received blockchain");
             this.blockChainDB = blockChain;
@@ -62,11 +58,11 @@ class BlockChain extends EventEmitter  {
         return this.currentLastBlock;
     }
 
-    get blockChain(): Block[] {
+    get blockChain(): IBlock[] {
         return this.blockChainDB;
     }
 
-    private validateBlock(newBlock: Block, previousBlock: Block): boolean {
+    private validateBlock(newBlock: IBlock, previousBlock: IBlock): boolean {
 
         const buffer = Buffer.from([previousBlock.index + 1, previousBlock.hash, newBlock.timestamp]);
         const realHashOfNewBlock = crypto.createHmac("sha256", buffer).update(newBlock.data).digest();
@@ -74,7 +70,7 @@ class BlockChain extends EventEmitter  {
         return !realHashOfNewBlock.compare(newBlock.hash);
     }
 
-    private validateBlockChain(blockchainToValidate: Block[]): boolean {
+    private validateBlockChain(blockchainToValidate: IBlock[]): boolean {
 
         return blockchainToValidate.every((blockToValidate, index, blockchain) => {
             if (index) {
@@ -85,6 +81,16 @@ class BlockChain extends EventEmitter  {
     }
 }
 
-const BC = new BlockChain();
+export const BC = new BlockChain();
 
-BC.on()
+BC.on(blockchainEvents.ADD_BLOCK, (block: IBlock) => {
+    this.addBlock(block);
+    // tslint:disable-next-line:no-console
+    console.log(`block: ${block.hash} was added`);
+});
+
+BC.on(blockchainEvents.SYNC_BLOCKCHAIN, (blockChain: BlockChain) => {
+    BC.replaceChain(blockChain);
+    // tslint:disable-next-line:no-console
+    console.log(`sync blockchain was over`);
+});
