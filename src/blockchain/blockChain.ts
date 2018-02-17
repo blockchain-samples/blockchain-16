@@ -14,7 +14,7 @@ class BlockChain implements IBlockChain, IObserver {
         observable.register(blockchainEvents.START_MINING, this);
     }
 
-    public update(data: IReceivedData) {
+    public update(data: IReceivedData<IBlock | IBlockChain | IBlockChainStats>) {
         const { type, content, wsStats } = data;
         switch (type) {
             case blockchainEvents.ADD_BLOCK:
@@ -42,7 +42,7 @@ class BlockChain implements IBlockChain, IObserver {
         }
     }
 
-    public createGenesis(randomHash: string): BlockChain {
+    private createGenesis(randomHash: string): BlockChain {
         if (!this.lastBlock) {
             const genesisParent: IBlock = {
                 data: "",
@@ -66,8 +66,7 @@ class BlockChain implements IBlockChain, IObserver {
                 type: p2pServerEvents.NEW_BLOCK_MADE,
             });
         } else {
-            // tslint:disable-next-line:no-console
-            console.log("Please first generate genesis block");
+            this.createGenesis("816534932c2b7154836da6afc367695e6337db8a921823784c14378abed4f7d7");
         }
     }
 

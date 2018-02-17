@@ -9,12 +9,11 @@ import { observable } from "../observables/observable";
 // get commands from peers and send data
 
 export class P2PServer implements IObserver {
+    private setOfClients: Set<Socket>;
     private server: Socket.Server;
-    private clients: Set<Socket>;
-    private ws: Socket;
     constructor(options: Socket.ServerOptions) {
         this.server = new Socket.Server({ port: options.port, clientTracking: options.clientTracking });
-        this.clients = this.server.clients;
+        this.setOfClients = this.server.clients;
 
         this.initMining();
         this.initConnection();
@@ -22,13 +21,13 @@ export class P2PServer implements IObserver {
         console.log(`listening websocket p2p port on: ${options.port}`);
     }
 
-    public update(data: IReceivedData): void {
+    public update(data: IReceivedData<IBlock>): void {
         const { type, content } = data;
         if (type === p2pServerEvents.NEW_BLOCK_MADE) {
             // tslint:disable-next-line:no-console
             console.log(`new block has been created! Send it to peers`);
-            this.clients.forEach((socket) => {
-                const newData: IReceivedData = {
+            this.setOfClients.forEach((socket) => {
+                const newData: IReceivedData<IBlock> = {
                     content,
                     type: wsServerMsgTypes.NEW_BLOCK,
                 };
@@ -38,12 +37,10 @@ export class P2PServer implements IObserver {
     }
 
     private initMining(): void {
-        if (true /*mining on*/) {
-            observable.register(p2pServerEvents.NEW_BLOCK_MADE, this);
-            observable.notify(blockchainEvents.START_MINING, {
-                type: blockchainEvents.START_MINING,
-            });
-        }
+        observable.register(p2pServerEvents.NEW_BLOCK_MADE, this);
+        observable.notify(blockchainEvents.START_MINING, {
+            type: blockchainEvents.START_MINING,
+        });
     }
 
     private initConnection(): void {
@@ -56,11 +53,11 @@ export class P2PServer implements IObserver {
 
     private initMessageHandler(socket: Socket): void {
         socket.on("message", (receivedData) => {
-            const { type }: IReceivedData = JSON.parse(receivedData.toString());
+            const { type }: IReceivedDataSimple = JSON.parse(receivedData.toString());
 
             switch (type) {
                 case wsClientMsgTypes.GET_ALL_BLOCKS:
-                    const blockChain: IReceivedData = {
+                    const blockChain: IReceivedData<IBlockChain> = {
                         content: {
                             blockChain: BC.blockChain,
                             lastBlock: BC.lastBlock,
@@ -70,7 +67,7 @@ export class P2PServer implements IObserver {
                     socket.send(JSON.stringify(blockChain));
                     break;
                 case wsClientMsgTypes.GET_LAST_DATA:
-                    const lastData: IReceivedData = {
+                    const lastData: IReceivedData<IBlockChainStats> = {
                         content: {
                             lastBlockHash: BC.lastBlock.hash,
                             lengthOfBlockchain: BC.blockChain.length,
@@ -91,5 +88,9 @@ export class P2PServer implements IObserver {
         };
         socket.on("close", closeConnection);
         socket.on("error", closeConnection);
+    }
+
+    get clients() {
+        return this.setOfClients;
     }
 }

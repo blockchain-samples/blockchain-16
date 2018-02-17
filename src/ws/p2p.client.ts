@@ -1,12 +1,7 @@
 import WebSocket = require("ws");
 
-import { blockchainEvents, p2pClientEvent, SERVER_PORT, wsClientMsgTypes, wsServerMsgTypes } from "../constants";
+import { blockchainEvents, p2pClientEvent, wsClientMsgTypes, wsServerMsgTypes } from "../constants";
 import { observable } from "../observables/observable";
-
-interface IPeerAddress {
-    ip: number | string;
-    port: number;
-}
 
 // get new block and add it to blockchain
 // send commands for server to get additional info
@@ -19,15 +14,15 @@ export class P2PClient implements IObserver {
         });
     }
 
-    private connectedPeers: WebSocket[] = [];
+    public connectedPeers: WebSocket[] = [];
     private shouldSyncBlockchain: boolean = true;
 
     constructor() {
-        this.connectToPeers([{ ip: "localhost", port: SERVER_PORT}]);
+        // this.connectToPeers([{ ip: "localhost", port: SERVER_PORT}]);
         observable.register(p2pClientEvent.SHOULD_GET_ALL_BLOCKS, this);
     }
 
-    public update(data: IReceivedData) {
+    public update(data: IReceivedData<IBlockChainStats>) {
         const { type, wsStats } = data;
         switch (type) {
             case p2pClientEvent.SHOULD_GET_ALL_BLOCKS:
@@ -41,10 +36,9 @@ export class P2PClient implements IObserver {
         }
     }
 
-    public connectToPeers(newPeers: IPeerAddress[]) {
+    public connectToPeers(newPeers: string[]) {
         newPeers.forEach((peer) => {
-            const { ip, port } = peer;
-            const ws = new WebSocket(`ws://${ip}:${port}`);
+            const ws = new WebSocket(`ws://${peer}`);
 
             this.initOpenHandler(ws);
             this.initMassageHandler(ws);
@@ -79,7 +73,8 @@ export class P2PClient implements IObserver {
     private initMassageHandler(ws: WebSocket): void {
         ws.on("message", (receivedData) => {
 
-            const {type, content}: IReceivedData = JSON.parse(receivedData.toString());
+            const { type, content }: IReceivedData<IBlock | IBlockChain | IBlockChainStats>
+             = JSON.parse(receivedData.toString());
 
             switch (type) {
                 case wsServerMsgTypes.ALL_BLOCKS:

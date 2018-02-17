@@ -7,28 +7,19 @@ class Observable extends EventEmitter implements IObservable {
         super();
     }
 
-    public register(event: string, observer: IObserver | IObserver[]): void {
-        if (Array.isArray(observer)) {
-            this.observers = this.observers.concat(observer);
-            this.on(event, (data: IReceivedData) => {
-                this.observers.forEach((activeObserver) => {
-                    activeObserver.update(data);
-                });
-            });
-        } else {
-            // tslint:disable-next-line:no-bitwise
-            if (!~this.observers.indexOf(observer)) {
-                this.observers.push(observer);
-            }
-            this.on(event, (data: IReceivedData) => {
-                this.observers.forEach((activeObserver) => {
-                    activeObserver.update(data);
-                });
-            });
+    public register(event: string, observer: IObserver): void {
+        // tslint:disable-next-line:no-bitwise
+        if (!~this.observers.indexOf(observer)) {
+            this.observers.push(observer);
         }
+        this.on(event, (data: IReceivedData<IBlock | IBlockChain | IBlockChainStats>) => {
+            this.observers.forEach((activeObserver) => {
+                activeObserver.update(data);
+            });
+        });
     }
 
-    public notify(event: string, data: IReceivedData): void {
+    public notify(event: string, data: IReceivedData<IBlock | IBlockChain | IBlockChainStats>): void {
         this.emit(event, data);
     }
 

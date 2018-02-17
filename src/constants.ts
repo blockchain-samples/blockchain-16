@@ -1,5 +1,5 @@
 export const SERVER_PORT: number = 8100;
-
+export const EXTERNAL_IP: string = "127.0.0.1";
 export const KEY: string = "hello i can mine blocks!";
 
 export const blockchainEvents = {

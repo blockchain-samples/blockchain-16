@@ -10,8 +10,9 @@
         "experimentalDecorators": true,
         "baseUrl": "./src",
         "typeRoots": [
-            "./typings"
-        ]
+            "./typings",
+            "./node_modules/@types",
+        ],
     },
     "exclude": [
         "*.spec.ts"

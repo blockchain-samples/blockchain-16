@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start:build": "tsc && node ./build/index.js",
-    "start": "node ./build/index.js"
+    "build": "tsc && node ./build/bin/www.js",
+    "start": "node ./build/bin/www.js",
+    "start:mining": "node ./build/bin/www.js --mining"
   },
   "repository": {
     "type": "git",
@@ -19,9 +20,12 @@
   },
   "homepage": "https://github.com/killroy192/blockchain#readme",
   "dependencies": {
+    "@types/body-parser": "^1.16.8",
+    "@types/express": "^4.11.1",
     "@types/node": "^9.4.6",
     "@types/ws": "^4.0.1",
-    "socket.io": "^2.0.4",
+    "body-parser": "^1.18.2",
+    "express": "^4.16.2",
     "ws": "^4.0.0"
   }
 }
