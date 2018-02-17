@@ -1,7 +1,7 @@
 import WebSocket = require("ws");
 
-import { BC } from "../blockchain/blockChain";
-import { blockchainEvents, SERVER_PORT, wsClientCommands, wsServerData } from "../constants";
+import { blockchainEvents, p2pClientEvent, SERVER_PORT, wsClientMsgTypes, wsServerMsgTypes } from "../constants";
+import { observable } from "../observables/observable";
 
 interface IPeerAddress {
     ip: number | string;
@@ -9,17 +9,36 @@ interface IPeerAddress {
 }
 
 // get new block and add it to blockchain
+// send commands for server to get additional info
 
-class P2PClient {
+export class P2PClient implements IObserver {
     public static syncBlockchain(blockChain: IBlockChain) {
-        BC.emit(blockchainEvents.SYNC_BLOCKCHAIN, blockChain);
+        observable.notify(blockchainEvents.SYNC_BLOCKCHAIN, {
+            content: blockChain,
+            type: blockchainEvents.SYNC_BLOCKCHAIN,
+        });
     }
 
-    private connectedPeers: WebSocket[];
+    private connectedPeers: WebSocket[] = [];
     private shouldSyncBlockchain: boolean = true;
 
     constructor() {
         this.connectToPeers([{ ip: "localhost", port: SERVER_PORT}]);
+        observable.register(p2pClientEvent.SHOULD_GET_ALL_BLOCKS, this);
+    }
+
+    public update(data: IReceivedData) {
+        const { type, wsStats } = data;
+        switch (type) {
+            case p2pClientEvent.SHOULD_GET_ALL_BLOCKS:
+                const ws = this.connectedPeers.find((wServer) => wServer.url === wsStats.url);
+                ws.send(JSON.stringify({
+                    type: wsClientMsgTypes.GET_ALL_BLOCKS,
+                }));
+                break;
+            default:
+                break;
+        }
     }
 
     public connectToPeers(newPeers: IPeerAddress[]) {
@@ -36,13 +55,13 @@ class P2PClient {
     private initOpenHandler(ws: WebSocket): void {
         ws.on("open", () => {
             if (this.shouldSyncBlockchain) {
-                ws.send({
-                    type: wsClientCommands.SYNC_BLOCKCHAIN,
-                });
+                ws.send(JSON.stringify({
+                    type: wsClientMsgTypes.GET_ALL_BLOCKS,
+                }));
             } else {
-                ws.send({
-                    type: wsClientCommands.LAST_DATA,
-                });
+                ws.send(JSON.stringify({
+                    type: wsClientMsgTypes.GET_LAST_DATA,
+                }));
             }
             // tslint:disable-next-line:no-console
             console.log("connection enable");
@@ -63,28 +82,31 @@ class P2PClient {
             const {type, content}: IReceivedData = JSON.parse(receivedData.toString());
 
             switch (type) {
-                case wsServerData.ALL_BLOCKS:
+                case wsServerMsgTypes.ALL_BLOCKS:
                     P2PClient.syncBlockchain(content as IBlockChain);
                     this.shouldSyncBlockchain = true;
                     break;
-                case wsServerData.NEW_BLOCK:
-                    BC.emit(blockchainEvents.ADD_BLOCK, content as IBlock);
-                case wsServerData.SHOULD_UPDATE:
-                    const { lastBlockHash, lengthOfBlockchain } = content;
-                    const needSync: boolean = (BC.lastBlock.hash.compare(Buffer.from(lastBlockHash))
-                    && BC.blockChain.length > lengthOfBlockchain);
-                    if (needSync) {
-                        ws.send({
-                            type: wsClientCommands.SYNC_BLOCKCHAIN,
-                        });
-                    }
+                case wsServerMsgTypes.NEW_BLOCK:
+                    // tslint:disable-next-line:no-console
+                    console.log(`new block has received from ${ws.url}`);
+                    observable.notify(blockchainEvents.ADD_BLOCK, {
+                        content: content as IBlock,
+                        type: blockchainEvents.ADD_BLOCK,
+                    });
+                    break;
+                case wsServerMsgTypes.LAST_DATA:
+                    observable.notify(blockchainEvents.CHECK_LAST_DATA, {
+                        content: content as IBlockChainStats,
+                        type: blockchainEvents.CHECK_LAST_DATA,
+                        wsStats: {
+                            protocol: ws.protocol,
+                            url: ws.url,
+                        },
+                    });
+                    break;
                 default:
                     break;
             }
-            // tslint:disable-next-line:no-console
-            console.log("ws get data");
         });
     }
 }
-
-export const p2pClient = new P2PClient();

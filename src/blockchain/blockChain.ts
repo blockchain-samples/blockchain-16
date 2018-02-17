@@ -1,19 +1,54 @@
 import crypto = require("crypto");
-import EventEmitter = require("events");
-import { blockchainEvents } from "../constants";
+import { setInterval } from "timers";
+import { blockchainEvents, KEY, p2pClientEvent, p2pServerEvents } from "../constants";
+import { observable } from "../observables/observable";
 import { Block } from "./block";
 
-class BlockChain extends EventEmitter implements IBlockChain {
+class BlockChain implements IBlockChain, IObserver {
     private blockChainDB: IBlock[] = [];
     private currentLastBlock: IBlock;
+
+    constructor() {
+        observable.register(blockchainEvents.ADD_BLOCK, this);
+        observable.register(blockchainEvents.SYNC_BLOCKCHAIN, this);
+        observable.register(blockchainEvents.START_MINING, this);
+    }
+
+    public update(data: IReceivedData) {
+        const { type, content, wsStats } = data;
+        switch (type) {
+            case blockchainEvents.ADD_BLOCK:
+                this.addBlock(content as IBlock);
+                break;
+            case blockchainEvents.SYNC_BLOCKCHAIN:
+                this.replaceChain(content as IBlockChain);
+                break;
+            case blockchainEvents.CHECK_LAST_DATA:
+                if (this.isBlockChainDifferent(content as IBlockChainStats)) {
+                    // notify client to get new blockchain from remote peer
+                    observable.notify(p2pClientEvent.SHOULD_GET_ALL_BLOCKS, {
+                        type: p2pClientEvent.SHOULD_GET_ALL_BLOCKS,
+                        wsStats,
+                    });
+                }
+                break;
+            case blockchainEvents.START_MINING:
+                const Interval = setInterval(() => {
+                    this.makeBlock(KEY);
+                }, 5000);
+                break;
+            default:
+                break;
+        }
+    }
 
     public createGenesis(randomHash: string): BlockChain {
         if (!this.lastBlock) {
             const genesisParent: IBlock = {
                 data: "",
-                hash: Buffer.from(randomHash, "hex"),
+                hash: crypto.createHmac("sha256", randomHash).digest("hex"),
                 index: -1,
-                prevHash: new Buffer(0),
+                prevHash: null,
                 timestamp: 0,
             };
             const genesisBock = new Block("My genesis block", genesisParent);
@@ -23,26 +58,32 @@ class BlockChain extends EventEmitter implements IBlockChain {
         return this;
     }
 
-    public makeBlock(data: string): Block {
+    private makeBlock(data: string): void {
         if (this.lastBlock) {
-            return new Block(data, this.lastBlock);
+            const block = new Block(data, this.lastBlock);
+            observable.notify(p2pServerEvents.NEW_BLOCK_MADE, {
+                content: block,
+                type: p2pServerEvents.NEW_BLOCK_MADE,
+            });
         } else {
             // tslint:disable-next-line:no-console
             console.log("Please first generate genesis block");
         }
     }
 
-    public addBlock(block: IBlock): BlockChain {
+    private addBlock(block: IBlock): BlockChain {
         if (block && this.validateBlock(block, this.lastBlock)) {
             this.blockChainDB.push(block);
             this.currentLastBlock = block;
+            // tslint:disable-next-line:no-console
+            console.log(`block ${block.hash} was added`);
         }
         return this;
     }
 
-    public replaceChain = ({ blockChain, lastBlock}: BlockChain) => {
+    private replaceChain = ({ blockChain, lastBlock }: IBlockChain) => {
 
-        if (blockChain.length > this.blockChainDB.length && this.validateBlockChain(blockChain)) {
+        if ((blockChain.length >= this.blockChainDB.length) && this.validateBlockChain(blockChain)) {
             // tslint:disable-next-line:no-console
             console.log("Received blockchain is valid. Replacing current blockchain with received blockchain");
             this.blockChainDB = blockChain;
@@ -65,9 +106,9 @@ class BlockChain extends EventEmitter implements IBlockChain {
     private validateBlock(newBlock: IBlock, previousBlock: IBlock): boolean {
 
         const buffer = Buffer.from([previousBlock.index + 1, previousBlock.hash, newBlock.timestamp]);
-        const realHashOfNewBlock = crypto.createHmac("sha256", buffer).update(newBlock.data).digest();
+        const realHashOfNewBlock = crypto.createHmac("sha256", buffer).update(newBlock.data).digest("hex");
 
-        return !realHashOfNewBlock.compare(newBlock.hash);
+        return realHashOfNewBlock === newBlock.hash;
     }
 
     private validateBlockChain(blockchainToValidate: IBlock[]): boolean {
@@ -76,21 +117,13 @@ class BlockChain extends EventEmitter implements IBlockChain {
             if (index) {
                 return this.validateBlock(blockToValidate, blockchain[index - 1]);
             }
-            return !blockToValidate.hash.compare(this.blockChainDB[0].hash);
+            return blockToValidate.hash === this.blockChainDB[0].hash;
         });
+    }
+
+    private isBlockChainDifferent({ lastBlockHash, lengthOfBlockchain }: IBlockChainStats): boolean {
+        return (!(this.currentLastBlock.hash === lastBlockHash) && lengthOfBlockchain > this.blockChain.length);
     }
 }
 
 export const BC = new BlockChain();
-
-BC.on(blockchainEvents.ADD_BLOCK, (block: IBlock) => {
-    this.addBlock(block);
-    // tslint:disable-next-line:no-console
-    console.log(`block: ${block.hash} was added`);
-});
-
-BC.on(blockchainEvents.SYNC_BLOCKCHAIN, (blockChain: BlockChain) => {
-    BC.replaceChain(blockChain);
-    // tslint:disable-next-line:no-console
-    console.log(`sync blockchain was over`);
-});

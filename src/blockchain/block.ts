@@ -3,8 +3,8 @@ import crypto = require("crypto");
 export class Block implements IBlock {
 
     public index: number;
-    public hash: Buffer;
-    public prevHash: Buffer;
+    public hash: string;
+    public prevHash: string;
     public timestamp: number;
     public data: string;
 
@@ -22,6 +22,6 @@ export class Block implements IBlock {
 
     private makeHash() {
         const buffer = Buffer.from([this.index, this.prevHash, this.timestamp]);
-        this.hash = crypto.createHmac("sha256", buffer).update(this.data).digest();
+        this.hash = crypto.createHmac("sha256", buffer).update(this.data).digest("hex");
     }
 }

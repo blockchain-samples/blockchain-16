@@ -1,52 +1,95 @@
+import EventEmitter = require("events");
 import Socket = require("ws");
-import { SERVER_PORT } from "../constants";
+
+import { BC } from "../blockchain/blockChain";
+import { blockchainEvents, p2pServerEvents, wsClientMsgTypes, wsServerMsgTypes } from "../constants";
+import { observable } from "../observables/observable";
 
 // send new block to peers
+// get commands from peers and send data
 
-class P2PServer {
-    public ip: any;
-    private port: number = 8100;
+export class P2PServer implements IObserver {
     private server: Socket.Server;
     private clients: Set<Socket>;
     private ws: Socket;
-    constructor(port?: number, options?: object) {
-
-        if (port) {
-            this.port = port;
-        }
-
-        this.server = new Socket.Server({port: this.port});
-
+    constructor(options: Socket.ServerOptions) {
+        this.server = new Socket.Server({ port: options.port, clientTracking: options.clientTracking });
         this.clients = this.server.clients;
 
-        this.initConnection = this.initConnection.bind(this);
-
-        this.server.on("connection", this.initConnection);
+        this.initMining();
+        this.initConnection();
         // tslint:disable-next-line:no-console
-        console.log(`listening websocket p2p port on: ${this.port}`);
+        console.log(`listening websocket p2p port on: ${options.port}`);
     }
 
-    private initConnection(ws: Socket, req: any): void {
-        this.ws = ws;
-        this.ip = req.connection.remoteAddress;
-        this.initMessageHandler();
-        this.initErrorHandler();
+    public update(data: IReceivedData): void {
+        const { type, content } = data;
+        if (type === p2pServerEvents.NEW_BLOCK_MADE) {
+            // tslint:disable-next-line:no-console
+            console.log(`new block has been created! Send it to peers`);
+            this.clients.forEach((socket) => {
+                const newData: IReceivedData = {
+                    content,
+                    type: wsServerMsgTypes.NEW_BLOCK,
+                };
+                socket.send(JSON.stringify(newData));
+            });
+        }
     }
 
-    private initMessageHandler(): void {
-        this.ws.on("message", (data: string) => {
-            this.ws.send("I listen");
+    private initMining(): void {
+        if (true /*mining on*/) {
+            observable.register(p2pServerEvents.NEW_BLOCK_MADE, this);
+            observable.notify(blockchainEvents.START_MINING, {
+                type: blockchainEvents.START_MINING,
+            });
+        }
+    }
+
+    private initConnection(): void {
+
+        this.server.on("connection", (socket, req) => {
+            this.initMessageHandler(socket);
+            this.initErrorHandler(socket);
         });
     }
 
-    private initErrorHandler(): void {
+    private initMessageHandler(socket: Socket): void {
+        socket.on("message", (receivedData) => {
+            const { type }: IReceivedData = JSON.parse(receivedData.toString());
+
+            switch (type) {
+                case wsClientMsgTypes.GET_ALL_BLOCKS:
+                    const blockChain: IReceivedData = {
+                        content: {
+                            blockChain: BC.blockChain,
+                            lastBlock: BC.lastBlock,
+                        },
+                        type: wsServerMsgTypes.ALL_BLOCKS,
+                    };
+                    socket.send(JSON.stringify(blockChain));
+                    break;
+                case wsClientMsgTypes.GET_LAST_DATA:
+                    const lastData: IReceivedData = {
+                        content: {
+                            lastBlockHash: BC.lastBlock.hash,
+                            lengthOfBlockchain: BC.blockChain.length,
+                        },
+                        type: wsServerMsgTypes.LAST_DATA,
+                    };
+                    socket.send(JSON.stringify(lastData));
+                default:
+                    break;
+            }
+        });
+    }
+
+    private initErrorHandler(socket: Socket): void {
         const closeConnection = () => {
             // tslint:disable-next-line:no-console
-            console.log("connection failed to peer: " + this.ws.url);
+            console.log("connection failed to peer: " + socket.url);
         };
-        this.ws.on("close", closeConnection);
-        this.ws.on("error", closeConnection);
+        socket.on("close", closeConnection);
+        socket.on("error", closeConnection);
     }
 }
-
-export const p2pServer = new P2PServer(SERVER_PORT);
