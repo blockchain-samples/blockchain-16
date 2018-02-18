@@ -27,3 +27,20 @@ export const wsServerMsgTypes = {
     LAST_DATA: "last_data",
     NEW_BLOCK: "new_block",
 };
+
+export const commands = {
+    // directive
+    CONSOLE: ["console"],
+    // flags
+    SHOW_VERSION: ["--version", "-v"],
+    SHOW_HELP: ["--help", "-h"],
+    SHOW_LOGS: ["--logs", "-lg"],
+    ENABLE_MINING: ["--mining", "-m"],
+    ENABLE_HTTP: ["--http"],
+};
+
+// export const consoleCommands = {
+//     SHOW_HELP: ,
+//     SHOW_VERSION: ["--version", "-v"],
+//     MAX_INCOMING_PEERS: []
+// }

@@ -1,3 +1,4 @@
+
 declare interface IBlock {
     index: number;
     hash: string;
@@ -38,7 +39,33 @@ declare interface IObservable {
     register: (event: string, observer: IObserver | IObserver[]) => void,
     notify: (event: string, data: IReceivedData<IBlock | IBlockChain | IBlockChainStats>) => void,
 }
+
 declare interface IPeerAddress {
     ip: number | string;
     port: number;
 }
+
+declare interface IP2PClient extends IObserver {
+    connectedPeers: Set<any>,
+    connectToPeers: (newPeers: string[]) => void,
+    syncBlockchain: (blockChain: IBlockChain) => void,
+}
+
+declare interface IP2PServer extends IObserver {
+    clients: Set<any>
+    initMining: () => void
+}
+
+declare interface IServerOptions {
+    host: string,
+    p2pPort: number,
+    httpPort: number,
+}
+
+declare interface IHttpAPIOptions extends IServerOptions {
+    BC: IBlockChain;
+    p2pClient: IP2PClient;
+    p2pServer: IP2PServer;
+}
+
+declare module "*.json" {}

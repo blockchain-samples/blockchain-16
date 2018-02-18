@@ -1,32 +1,38 @@
 import WebSocket = require("ws");
 
-import { blockchainEvents, p2pClientEvent, wsClientMsgTypes, wsServerMsgTypes } from "../constants";
+import {
+    blockchainEvents,
+    p2pClientEvent,
+    wsClientMsgTypes,
+    wsServerMsgTypes,
+} from "../constants";
 import { observable } from "../observables/observable";
 
 // get new block and add it to blockchain
 // send commands for server to get additional info
 
-export class P2PClient implements IObserver {
-    public static syncBlockchain(blockChain: IBlockChain) {
+export class P2PClient implements IP2PClient {
+
+    public connectedPeers: Set<WebSocket> = new Set();
+    private shouldSyncBlockchain: boolean = true;
+
+    constructor(options: IServerOptions) {
+        this.connectToPeers([`${options.host}:${options.p2pPort}`]);
+        observable.register(p2pClientEvent.SHOULD_GET_ALL_BLOCKS, this);
+    }
+
+    public syncBlockchain(blockChain: IBlockChain): void {
         observable.notify(blockchainEvents.SYNC_BLOCKCHAIN, {
             content: blockChain,
             type: blockchainEvents.SYNC_BLOCKCHAIN,
         });
     }
 
-    public connectedPeers: WebSocket[] = [];
-    private shouldSyncBlockchain: boolean = true;
-
-    constructor() {
-        // this.connectToPeers([{ ip: "localhost", port: SERVER_PORT}]);
-        observable.register(p2pClientEvent.SHOULD_GET_ALL_BLOCKS, this);
-    }
-
     public update(data: IReceivedData<IBlockChainStats>) {
         const { type, wsStats } = data;
         switch (type) {
             case p2pClientEvent.SHOULD_GET_ALL_BLOCKS:
-                const ws = this.connectedPeers.find((wServer) => wServer.url === wsStats.url);
+                const ws = [...this.connectedPeers].find((wServer) => wServer.url === wsStats.url);
                 ws.send(JSON.stringify({
                     type: wsClientMsgTypes.GET_ALL_BLOCKS,
                 }));
@@ -36,7 +42,7 @@ export class P2PClient implements IObserver {
         }
     }
 
-    public connectToPeers(newPeers: string[]) {
+    public connectToPeers(newPeers: string[]): void {
         newPeers.forEach((peer) => {
             const ws = new WebSocket(`ws://${peer}`);
 
@@ -60,7 +66,7 @@ export class P2PClient implements IObserver {
             // tslint:disable-next-line:no-console
             console.log("connection enable");
         });
-        this.connectedPeers.push(ws);
+        this.connectedPeers.add(ws);
     }
 
     private initErrorHandler(ws: WebSocket): void {
@@ -78,7 +84,7 @@ export class P2PClient implements IObserver {
 
             switch (type) {
                 case wsServerMsgTypes.ALL_BLOCKS:
-                    P2PClient.syncBlockchain(content as IBlockChain);
+                    this.syncBlockchain(content as IBlockChain);
                     this.shouldSyncBlockchain = true;
                     break;
                 case wsServerMsgTypes.NEW_BLOCK:

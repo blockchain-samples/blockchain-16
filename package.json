@@ -2,12 +2,15 @@
   "name": "blockchain",
   "version": "0.0.1",
   "description": "simple implementation of blockchain in js",
-  "main": "index.js",
+  "main": "coin.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc && node ./build/bin/www.js",
-    "start": "node ./build/bin/www.js",
-    "start:mining": "node ./build/bin/www.js --mining"
+    "start": "node ./build/coin.js",
+    "start:mining": "node ./build/coin.js --mining"
+  },
+  "bin": {
+    "coin": "./build/coin.js"
   },
   "repository": {
     "type": "git",

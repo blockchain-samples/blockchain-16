@@ -8,14 +8,13 @@ import { observable } from "../observables/observable";
 // send new block to peers
 // get commands from peers and send data
 
-export class P2PServer implements IObserver {
+export class P2PServer implements IP2PServer {
+
     private setOfClients: Set<Socket>;
     private server: Socket.Server;
     constructor(options: Socket.ServerOptions) {
         this.server = new Socket.Server({ port: options.port, clientTracking: options.clientTracking });
         this.setOfClients = this.server.clients;
-
-        this.initMining();
         this.initConnection();
         // tslint:disable-next-line:no-console
         console.log(`listening websocket p2p port on: ${options.port}`);
@@ -36,7 +35,7 @@ export class P2PServer implements IObserver {
         }
     }
 
-    private initMining(): void {
+    public initMining(): void {
         observable.register(p2pServerEvents.NEW_BLOCK_MADE, this);
         observable.notify(blockchainEvents.START_MINING, {
             type: blockchainEvents.START_MINING,
@@ -90,7 +89,7 @@ export class P2PServer implements IObserver {
         socket.on("error", closeConnection);
     }
 
-    get clients() {
+    get clients(): Set<Socket> {
         return this.setOfClients;
     }
 }
