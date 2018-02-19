@@ -14,7 +14,6 @@ Width cli app
 $ configurate
 ```
 Rewrite config files in {root}/config
-Available flags:
 
 | File          | Description                 |
 |---------------|-----------------------------|
@@ -27,10 +26,11 @@ Available flags:
 $ coin [flags]
 ```
 Available flags:
-| Flag          | Description                            |
-|---------------|----------------------------------------|
-| --help, -v    | show available flags with descrioption |
-| --version, -v | version of blockchain                  |
-| --logs, -lg   | show logging                           |
-| --mining, -m  | enable mining                          |
-| --http        | enable additional API http server      | 
+
+| Flag          | Description                           |
+|---------------|---------------------------------------|
+| --help, -v    | show available flags with description |
+| --version, -v | version of blockchain                 |
+| --logs, -lg   | show logging                          |
+| --mining, -m  | enable mining                         |
+| --http        | enable additional API http server     |
