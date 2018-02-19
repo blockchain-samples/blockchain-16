@@ -17,7 +17,11 @@ export class P2PClient implements IP2PClient {
     private shouldSyncBlockchain: boolean = true;
 
     constructor(options: IServerOptions) {
-        this.connectToPeers([`${options.host}:${options.p2pPort}`]);
+        if (options.remotePeers.length > 0) {
+            this.connectToPeers([`${options.host}:${options.p2pPort}`].concat(options.remotePeers));
+        } else {
+            this.connectToPeers([`${options.host}:${options.p2pPort}`]);
+        }
         observable.register(p2pClientEvent.SHOULD_GET_ALL_BLOCKS, this);
     }
 
@@ -85,7 +89,7 @@ export class P2PClient implements IP2PClient {
             switch (type) {
                 case wsServerMsgTypes.ALL_BLOCKS:
                     this.syncBlockchain(content as IBlockChain);
-                    this.shouldSyncBlockchain = true;
+                    this.shouldSyncBlockchain = false;
                     break;
                 case wsServerMsgTypes.NEW_BLOCK:
                     // tslint:disable-next-line:no-console

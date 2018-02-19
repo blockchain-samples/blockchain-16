@@ -60,7 +60,7 @@ declare interface IServerOptions {
     host?: string,
     p2pPort?: number,
     httpPort?: number,
-    remotePeers?: string,
+    remotePeers?: string[],
     maxpeers?: number,
     maxpendpeers?: number,
     nodiscover?: boolean,
