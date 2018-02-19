@@ -57,9 +57,13 @@ declare interface IP2PServer extends IObserver {
 }
 
 declare interface IServerOptions {
-    host: string,
-    p2pPort: number,
-    httpPort: number,
+    host?: string,
+    p2pPort?: number,
+    httpPort?: number,
+    remotePeers?: string,
+    maxpeers?: number,
+    maxpendpeers?: number,
+    nodiscover?: boolean,
 }
 
 declare interface IHttpAPIOptions extends IServerOptions {

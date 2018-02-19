@@ -3,6 +3,7 @@ import { setInterval } from "timers";
 import { blockchainEvents, KEY, p2pClientEvent, p2pServerEvents } from "../constants";
 import { observable } from "../observables/observable";
 import { Block } from "./block";
+import { preGenesis } from "../config";
 
 class BlockChain implements IBlockChain, IObserver {
     private blockChainDB: IBlock[] = [];
@@ -42,22 +43,6 @@ class BlockChain implements IBlockChain, IObserver {
         }
     }
 
-    private createGenesis(randomHash: string): BlockChain {
-        if (!this.lastBlock) {
-            const genesisParent: IBlock = {
-                data: "",
-                hash: crypto.createHmac("sha256", randomHash).digest("hex"),
-                index: -1,
-                prevHash: null,
-                timestamp: 0,
-            };
-            const genesisBock = new Block("My genesis block", genesisParent);
-            this.blockChainDB = [genesisBock];
-            this.currentLastBlock = genesisBock;
-        }
-        return this;
-    }
-
     private makeBlock(data: string): void {
         if (this.lastBlock) {
             const block = new Block(data, this.lastBlock);
@@ -66,21 +51,22 @@ class BlockChain implements IBlockChain, IObserver {
                 type: p2pServerEvents.NEW_BLOCK_MADE,
             });
         } else {
-            this.createGenesis("816534932c2b7154836da6afc367695e6337db8a921823784c14378abed4f7d7");
+            const genesisBock = new Block("The genesis block", Object.assign({}, preGenesis, { index: -1, prevHash: null, timestamp: 0}));
+            this.blockChainDB = [genesisBock];
+            this.currentLastBlock = genesisBock;
         }
     }
 
-    private addBlock(block: IBlock): BlockChain {
+    private addBlock(block: IBlock): void {
         if (block && this.validateBlock(block, this.lastBlock)) {
             this.blockChainDB.push(block);
             this.currentLastBlock = block;
             // tslint:disable-next-line:no-console
             console.log(`block ${block.hash} was added`);
         }
-        return this;
     }
 
-    private replaceChain = ({ blockChain, lastBlock }: IBlockChain) => {
+    private replaceChain({ blockChain, lastBlock }: IBlockChain): void {
 
         if ((blockChain.length >= this.blockChainDB.length) && this.validateBlockChain(blockChain)) {
             // tslint:disable-next-line:no-console
@@ -94,7 +80,7 @@ class BlockChain implements IBlockChain, IObserver {
 
     }
 
-    get lastBlock() {
+    get lastBlock(): IBlock {
         return this.currentLastBlock;
     }
 

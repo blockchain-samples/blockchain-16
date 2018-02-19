@@ -1,3 +1,5 @@
-import config = require("../config/servers.json");
+import network = require("../config/network.json");
+import genesis = require("../config/genesis.json");
 
-export const serverConfig = (config as IServerOptions);
+export const networkOptions = (network as IServerOptions);
+export const preGenesis = (network as IBlock);

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { BC } from "./blockchain/blockChain";
-import { serverConfig } from "./config";
+import { networkOptions } from "./config";
 import { commands } from "./constants";
 import { www } from "./https/www";
 import { P2PClient } from "./ws/p2p.client";
@@ -25,12 +25,14 @@ import utils = require("./utils");
 
     const p2pServer = new P2PServer({
         clientTracking: true,
-        port: serverConfig.p2pPort,
+        port: networkOptions.p2pPort,
+        backlog: networkOptions.maxpeers,
     });
     const p2pClient = new P2PClient({
-        host: serverConfig.host,
-        p2pPort: serverConfig.p2pPort,
-        httpPort: serverConfig.httpPort
+        host: networkOptions.host,
+        p2pPort: networkOptions.p2pPort,
+        remotePeers: networkOptions.remotePeers,
+        nodiscover: networkOptions.nodiscover,
     });
 
     if (~flags.indexOf(commands.ENABLE_MINING[0]) || ~flags.indexOf(commands.ENABLE_MINING[1])) {
@@ -39,9 +41,8 @@ import utils = require("./utils");
 
     if (~flags.indexOf(commands.ENABLE_HTTP[0])) {
         www({
-            host: serverConfig.host,
-            p2pPort: serverConfig.p2pPort,
-            httpPort: serverConfig.httpPort,
+            host: networkOptions.host,
+            httpPort: networkOptions.httpPort,
             p2pServer,
             p2pClient,
             BC,
