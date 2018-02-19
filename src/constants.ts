@@ -39,8 +39,18 @@ export const commands = {
     ENABLE_HTTP: ["--http"],
 };
 
-// export const consoleCommands = {
-//     SHOW_HELP: ,
-//     SHOW_VERSION: ["--version", "-v"],
-//     MAX_INCOMING_PEERS: []
-// }
+export const HELP_INFO = `
+| Flag          | Description                           |
+|---------------|---------------------------------------|
+| --help, -v    | show available flags with description |
+| --version, -v | version of blockchain                 |
+| --logs, -lg   | show logging                          |
+| --mining, -m  | enable mining                         |
+| --http        | enable additional API http server     |
+`;
+
+export const dbg_colors = {
+    ERROR: 1,
+    WARN: 3,
+    LOG: 4,
+}

@@ -2,11 +2,12 @@
 
 import { BC } from "./blockchain/blockChain";
 import { networkOptions } from "./config";
-import { commands } from "./constants";
+import { commands, HELP_INFO } from "./constants";
 import { www } from "./https/www";
 import { P2PClient } from "./ws/p2p.client";
 import { P2PServer } from "./ws/p2p.server";
 import utils = require("./utils");
+import Logger = require("./logger");
 
 (function executeByFlags(flags: string[]): void {
     if (~flags.indexOf(commands.SHOW_VERSION[0]) || ~flags.indexOf(commands.SHOW_VERSION[1])) {
@@ -15,7 +16,7 @@ import utils = require("./utils");
     }  
     
     if (~flags.indexOf(commands.SHOW_HELP[0]) || ~flags.indexOf(commands.SHOW_HELP[1])) {
-        console.log("help");
+        console.log(HELP_INFO);
         return;
     }
 
