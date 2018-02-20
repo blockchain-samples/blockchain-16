@@ -4,6 +4,9 @@ import { blockchainEvents, KEY, p2pClientEvent, p2pServerEvents } from "../const
 import { observable } from "../observables/observable";
 import { Block } from "./block";
 import { preGenesis } from "../config";
+import { Logger } from "../logger";
+
+const MODULE_NAME = "blockChain";
 
 class BlockChain implements IBlockChain, IObserver {
     private blockChainDB: IBlock[] = [];
@@ -61,21 +64,18 @@ class BlockChain implements IBlockChain, IObserver {
         if (block && this.validateBlock(block, this.lastBlock)) {
             this.blockChainDB.push(block);
             this.currentLastBlock = block;
-            // tslint:disable-next-line:no-console
-            console.log(`block ${block.hash} was added`);
+            Logger.log(MODULE_NAME, `block ${block.hash} was added`);
         }
     }
 
     private replaceChain({ blockChain, lastBlock }: IBlockChain): void {
 
         if ((blockChain.length >= this.blockChainDB.length) && this.validateBlockChain(blockChain)) {
-            // tslint:disable-next-line:no-console
-            console.log("Received blockchain is valid. Replacing current blockchain with received blockchain");
+            Logger.log(MODULE_NAME, "Received blockchain is valid. Replacing current blockchain with received blockchain");
             this.blockChainDB = blockChain;
             this.currentLastBlock = lastBlock;
         } else {
-            // tslint:disable-next-line:no-console
-            console.log("Received blockchain invalid");
+            Logger.log(MODULE_NAME, "Received blockchain invalid");
         }
 
     }

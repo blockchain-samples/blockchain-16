@@ -1,15 +1,16 @@
 import http = require("http");
 import path = require("path");
 import { app } from "./app";
+import { Logger } from "../logger";
+
+const MODULE_NAME = "www";
 
 export function www(options: IHttpAPIOptions) {
 
     const expressApp = app(options);
-    // tslint:disable-next-line:no-console
-    const handleError: (error: Error) => void = (error) => console.log(`The ${error} was throws`);
-
-    // tslint:disable-next-line:no-console
-    const handleListen: () => void = () => console.log(`Server running at http://${options.host}:${options.httpPort}/`);
+    
+    const handleError: (error: Error) => void = (error) => Logger.log(MODULE_NAME, `The ${error} was throws`);
+    const handleListen: () => void = () => Logger.log(MODULE_NAME, `Server running at http://${options.host}:${options.httpPort}/`);
 
     const server = http.createServer(expressApp);
 

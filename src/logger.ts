@@ -6,10 +6,10 @@ interface ICustomLogger extends debug.IDebugger {
     color?: number
 }
 
-interface ILogger {
-    error: (moduleName: string, message: string) => void,
-    warn: (moduleName: string, message: string) => void,
-    log: (moduleName: string, message: string) => void,
+enum ILogLevel {
+    One,
+    Two,
+    Tree,
 }
 
 const appLog: ICustomLogger = debug('app:: log::');
@@ -25,37 +25,43 @@ const makeLogger = (logger: ICustomLogger) => (moduleName: string, message: stri
     return logger(logMsg);
 };
 
-const log = makeLogger(appLog);
-const warn = makeLogger(appWarn);
-const error = makeLogger(appError);
+const Log = makeLogger(appLog);
+const Warn = makeLogger(appWarn);
+const Error = makeLogger(appError);
 
-const level = process.env.LOG_LEVEL || 3;
+export class Logger {
+    private static loggerLevel: ILogLevel = 3;
+    private static isEnable: boolean = false;
+    private static Log = makeLogger(appLog);
+    private static Warn = makeLogger(appWarn);
+    private static Error = makeLogger(appError);
+    set logLevel(level: ILogLevel) {
+        Logger.loggerLevel = level;
+    }
 
-let Logger: ILogger;
+    public static enable() {
+        Logger.isEnable = true;
+    }
 
-switch (Number(level)) {
-    case 1:
-        Logger = {
-            error,
-            warn: noop,
-            log: noop,
-        };
-        break;
-    case 2:
-        Logger = {
-            error,
-            warn,
-            log: noop,
-        };
-        break;
+    public static disable() {
+        Logger.isEnable = false;
+    }
 
-    default:
-        Logger = {
-            error,
-            warn,
-            log,
-        };
-        break;
+    public static log(moduleName: string, message: string) {
+        if (Logger.loggerLevel > 2 && Logger.isEnable) {
+            Logger.Warn(moduleName, message);
+        }
+    }
+
+    public static warn(moduleName: string, message: string) {
+        if (Logger.loggerLevel > 1 && Logger.isEnable) {
+            Logger.Warn(moduleName, message);
+        }
+    }
+
+    public static error(moduleName: string, message: string) {
+        if (Logger.isEnable) {
+            Logger.Error(moduleName, message);
+        }
+    }
 }
-
-export default Logger;

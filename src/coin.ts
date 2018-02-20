@@ -7,7 +7,7 @@ import { www } from "./https/www";
 import { P2PClient } from "./ws/p2p.client";
 import { P2PServer } from "./ws/p2p.server";
 import utils = require("./utils");
-import Logger = require("./logger");
+import { Logger } from "./logger";
 
 (function executeByFlags(flags: string[]): void {
     if (~flags.indexOf(commands.SHOW_VERSION[0]) || ~flags.indexOf(commands.SHOW_VERSION[1])) {
@@ -21,7 +21,7 @@ import Logger = require("./logger");
     }
 
     if (~flags.indexOf(commands.SHOW_LOGS[0]) || ~flags.indexOf(commands.SHOW_LOGS[1])) {
-        console.log("enable logs");
+        Logger.enable();
     }
 
     const p2pServer = new P2PServer({
