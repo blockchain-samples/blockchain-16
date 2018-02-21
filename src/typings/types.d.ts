@@ -1,10 +1,22 @@
 
+declare interface IObserver {
+    update: (data: IReceivedData<IBlock | IBlockChain | IBlockChainStats>) => void,
+}
+
+declare interface IObservable {
+    // register observer to specific event
+    register: (event: string, observer: IObserver | IObserver[]) => void,
+    notify: (event: string, data: IReceivedData<IBlock | IBlockChain | IBlockChainStats>) => void,
+}
+
 declare interface IBlock {
     index: number;
     hash: string;
     prevHash: string;
     timestamp: number;
     data: string;
+    difficulty: number;
+    nonce: number;
 }
 
 declare interface IBlockChain {
@@ -28,16 +40,6 @@ declare interface IReceivedDataSimple {
 declare interface IReceivedData<T> extends IReceivedDataSimple {
     content?: T,
     wsStats?: IWsStats,
-}
-
-declare interface IObserver {
-    update: (data: IReceivedData<IBlock | IBlockChain | IBlockChainStats>)=> void,
-}
-
-declare interface IObservable {
-    // register observer to specific event
-    register: (event: string, observer: IObserver | IObserver[]) => void,
-    notify: (event: string, data: IReceivedData<IBlock | IBlockChain | IBlockChainStats>) => void,
 }
 
 declare interface IPeerAddress {

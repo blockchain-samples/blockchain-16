@@ -36,9 +36,11 @@ import { Logger } from "./logger";
         nodiscover: networkOptions.nodiscover,
     });
 
-    if (~flags.indexOf(commands.ENABLE_MINING[0]) || ~flags.indexOf(commands.ENABLE_MINING[1])) {
-        p2pServer.initMining();
-    }
+    p2pServer.initMining();
+
+    // if (~flags.indexOf(commands.ENABLE_MINING[0]) || ~flags.indexOf(commands.ENABLE_MINING[1])) {
+    //     p2pServer.initMining();
+    // }
 
     if (~flags.indexOf(commands.ENABLE_HTTP[0])) {
         www({

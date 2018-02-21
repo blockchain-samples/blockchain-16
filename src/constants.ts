@@ -7,6 +7,7 @@ export const blockchainEvents = {
     CHECK_LAST_DATA: "check_last_data",
     START_MINING: "start_mining",
     SYNC_BLOCKCHAIN: "sync_blockchain",
+    MINE_BLOCK: "mine_block",
 };
 
 export const p2pServerEvents = {
