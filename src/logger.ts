@@ -1,3 +1,5 @@
+process.env.DEBUG = "app *, -not_this"
+
 import { noop } from "./utils";
 import { dbg_colors } from "./constants";
 import debug = require("debug")
@@ -49,7 +51,7 @@ export class Logger {
 
     public static log(moduleName: string, message: string) {
         if (Logger.loggerLevel > 2 && Logger.isEnable) {
-            Logger.Warn(moduleName, message);
+            Logger.Log(moduleName, message);
         }
     }
 

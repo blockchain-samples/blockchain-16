@@ -8,8 +8,8 @@ const MODULE_NAME = "www";
 export function www(options: IHttpAPIOptions) {
 
     const expressApp = app(options);
-    
-    const handleError: (error: Error) => void = (error) => Logger.log(MODULE_NAME, `The ${error} was throws`);
+
+    const handleError: (error: Error) => void = (error) => Logger.error(MODULE_NAME, JSON.stringify(error));
     const handleListen: () => void = () => Logger.log(MODULE_NAME, `Server running at http://${options.host}:${options.httpPort}/`);
 
     const server = http.createServer(expressApp);

@@ -7,6 +7,9 @@ import {
     wsServerMsgTypes,
 } from "../constants";
 import { observable } from "../observables/observable";
+import { Logger } from "../logger";
+
+const MODULE_NAME = "p2p.client"
 
 // get new block and add it to blockchain
 // send commands for server to get additional info
@@ -48,11 +51,15 @@ export class P2PClient implements IP2PClient {
 
     public connectToPeers(newPeers: string[]): void {
         newPeers.forEach((peer) => {
-            const ws = new WebSocket(`ws://${peer}`);
-
-            this.initOpenHandler(ws);
-            this.initMassageHandler(ws);
-            this.initErrorHandler(ws);
+            try {
+                const ws = new WebSocket(`ws://${peer}`);
+                Logger.log(MODULE_NAME, `start connect to ws://${peer}`)
+                this.initOpenHandler(ws);
+                this.initMassageHandler(ws);
+                this.initErrorHandler(ws);
+            } catch(e) {
+                Logger.error(MODULE_NAME, JSON.stringify(e));
+            }
         });
     }
 
@@ -67,16 +74,15 @@ export class P2PClient implements IP2PClient {
                     type: wsClientMsgTypes.GET_LAST_DATA,
                 }));
             }
-            // tslint:disable-next-line:no-console
-            console.log("connection enable");
+            Logger.log(MODULE_NAME, "connection enable");
         });
         this.connectedPeers.add(ws);
     }
 
     private initErrorHandler(ws: WebSocket): void {
-        ws.on("error", () => {
+        ws.on("error", (e) => {
             // tslint:disable-next-line:no-console
-            console.log("connection failed");
+            Logger.error(MODULE_NAME, JSON.stringify(e));
         });
     }
 
@@ -93,8 +99,8 @@ export class P2PClient implements IP2PClient {
                     break;
                 case wsServerMsgTypes.NEW_BLOCK:
                     // tslint:disable-next-line:no-console
-                    console.log(`new block has received from ${ws.url}`);
-                    observable.notify(blockchainEvents.ADD_BLOCK, {
+                    Logger.log(MODULE_NAME, `new block has been received from ${ws.url}`);
+                    observable.notify(blockchainEvents.ADD_BLOCK, { 
                         content: content as IBlock,
                         type: blockchainEvents.ADD_BLOCK,
                     });

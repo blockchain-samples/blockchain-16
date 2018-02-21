@@ -55,6 +55,7 @@ class BlockChain implements IBlockChain, IObserver {
             });
         } else {
             const genesisBock = new Block("The genesis block", Object.assign({}, preGenesis, { index: -1, prevHash: null, timestamp: 0}));
+            Logger.log(MODULE_NAME, `genesis ${genesisBock.hash} created`);
             this.blockChainDB = [genesisBock];
             this.currentLastBlock = genesisBock;
         }
@@ -75,7 +76,7 @@ class BlockChain implements IBlockChain, IObserver {
             this.blockChainDB = blockChain;
             this.currentLastBlock = lastBlock;
         } else {
-            Logger.log(MODULE_NAME, "Received blockchain invalid");
+            Logger.warn(MODULE_NAME, "Received blockchain invalid");
         }
 
     }

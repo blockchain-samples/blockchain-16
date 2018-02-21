@@ -4,6 +4,9 @@ import Socket = require("ws");
 import { BC } from "../blockchain/blockChain";
 import { blockchainEvents, p2pServerEvents, wsClientMsgTypes, wsServerMsgTypes } from "../constants";
 import { observable } from "../observables/observable";
+import { Logger } from "../logger";
+
+const MODULE_NAME = "p2p.server";
 
 // send new block to peers
 // get commands from peers and send data
@@ -17,15 +20,16 @@ export class P2PServer implements IP2PServer {
         this.setOfClients = this.server.clients;
         this.initConnection();
         // tslint:disable-next-line:no-console
-        console.log(`listening websocket p2p port on: ${options.port}`);
+        Logger.log(MODULE_NAME, `listening on: ${options.port}`);
     }
 
     public update(data: IReceivedData<IBlock>): void {
         const { type, content } = data;
         if (type === p2pServerEvents.NEW_BLOCK_MADE) {
             // tslint:disable-next-line:no-console
-            console.log(`new block has been created! Send it to peers`);
+            Logger.log(MODULE_NAME, `new block ${content.hash} has been created!`);
             this.setOfClients.forEach((socket) => {
+                Logger.log(MODULE_NAME, `Send new block to ${socket.url}`);
                 const newData: IReceivedData<IBlock> = {
                     content,
                     type: wsServerMsgTypes.NEW_BLOCK,
@@ -45,6 +49,7 @@ export class P2PServer implements IP2PServer {
     private initConnection(): void {
 
         this.server.on("connection", (socket, req) => {
+            Logger.log(MODULE_NAME, `enable connection`)
             this.initMessageHandler(socket);
             this.initErrorHandler(socket);
         });
@@ -81,12 +86,15 @@ export class P2PServer implements IP2PServer {
     }
 
     private initErrorHandler(socket: Socket): void {
-        const closeConnection = () => {
-            // tslint:disable-next-line:no-console
-            console.log("connection failed to peer: " + socket.url);
-        };
-        socket.on("close", closeConnection);
-        socket.on("error", closeConnection);
+        socket.on("error", (e) => {
+            Logger.error(MODULE_NAME, `connection failed: ${e}`);
+        });
+    }
+
+    private initCloseHandler(socket: Socket): void {
+        socket.on("close", (code, reason) => {
+            Logger.warn(MODULE_NAME, `connection close: ${code}`);
+        });
     }
 
     get clients(): Set<Socket> {
