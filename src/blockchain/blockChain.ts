@@ -5,7 +5,7 @@ import { observable } from "../observables/observable";
 import { Block } from "./block";
 import { preGenesis } from "../config";
 import { Logger } from "../logger";
-import { hexToBinary } from "../utils";
+import { hexToBinary, getCurrentTimestamp } from "../utils";
 
 const MODULE_NAME = "blockChain";
 
@@ -13,7 +13,7 @@ class BlockChain implements IBlockChain, IObserver {
     private blockChainDB: IBlock[] = [];
     private currentLastBlock: IBlock;
     private BLOCK_GENERATION_INTERVAL: number = 10;
-    private DIFFICULTY_ADJUSTMENT_INTERVAL: number = 2;
+    private DIFFICULTY_ADJUSTMENT_INTERVAL: number = 1;
     private isMiningOn: boolean = false;
 
     constructor() {
@@ -72,7 +72,7 @@ class BlockChain implements IBlockChain, IObserver {
             }            
         } else {
             const pseudoBlock: IBlock = Object.assign({}, preGenesis, { index: -1, prevHash: null, timestamp: 0 });
-            const genesisBock = new Block("The genesis block", 1, 0, pseudoBlock);
+            const genesisBock = new Block("The genesis block", 10, 0, pseudoBlock);
             Logger.log(MODULE_NAME, `genesis ${genesisBock.hash} created`);
             this.blockChainDB = [genesisBock];
             this.currentLastBlock = genesisBock;
@@ -87,10 +87,10 @@ class BlockChain implements IBlockChain, IObserver {
             this.blockChainDB.push(block);
             this.currentLastBlock = block;
             Logger.log(MODULE_NAME, `block ${block.hash} was added`);
-            observable.notify(blockchainEvents.MINE_BLOCK, {
-                type: blockchainEvents.MINE_BLOCK,
-            });
         }
+        observable.notify(blockchainEvents.MINE_BLOCK, {
+            type: blockchainEvents.MINE_BLOCK,
+        });
     }
 
     private replaceChain({ blockChain, lastBlock }: IBlockChain): void {
@@ -116,21 +116,26 @@ class BlockChain implements IBlockChain, IObserver {
         return this.blockChainDB;
     }
 
+    private isValidTimestamp (newBlock: IBlock, previousBlock: IBlock): boolean {
+        return (previousBlock.timestamp - 30 < newBlock.timestamp)
+            && newBlock.timestamp - 30 < getCurrentTimestamp();
+    };
+
     private validateBlock(newBlock: IBlock, previousBlock: IBlock): boolean {
 
         const buffer = Buffer.from([previousBlock.index + 1, previousBlock.hash, newBlock.timestamp, newBlock.difficulty, newBlock.nonce]);
         const realHashOfNewBlock = crypto.createHmac("sha256", buffer).update(newBlock.data).digest("hex");
 
-        return realHashOfNewBlock === newBlock.hash;
+        return realHashOfNewBlock === newBlock.hash && this.isValidTimestamp(newBlock, previousBlock);
     }
 
     private validateBlockChain(blockchainToValidate: IBlock[]): boolean {
 
         return blockchainToValidate.every((blockToValidate, index, blockchain) => {
             if (index) {
-                return this.validateBlock(blockToValidate, blockchain[index - 1]);
+                return this.validateBlock(blockToValidate, this.blockChain[index - 1])
             }
-            return blockToValidate.hash === this.blockChainDB[0].hash;
+            return blockToValidate.hash === this.blockChain[0].hash  ;
         });
     }
 

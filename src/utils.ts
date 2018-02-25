@@ -30,3 +30,7 @@ export function hexToBinary(s: string): string {
     }
     return ret;
 };
+
+export function getCurrentTimestamp (): number {
+    return Math.round(new Date().getTime() / 1000);
+}
